@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",                                 
+    "module": "commonjs",                                
+    "allowJs": true,                                  
+    "esModuleInterop": true, 
+    "outDir": "./distr",                            
+    "forceConsistentCasingInFileNames": true,            
+    "strict": true,                                     
+    "skipLibCheck": true                                 
+  },
+  "include": ["src/**/*.ts"],       // Какие файлы включать в сборку
+  "exclude": ["node_modules"]        // Исключаемые папки
+}
