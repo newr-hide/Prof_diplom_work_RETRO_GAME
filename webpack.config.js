@@ -1,16 +1,26 @@
-const path = require('node:path');
-const HtmlWebPackPlugin = require('html-webpack-plugin');
+import path from 'node:path';
+import HtmlWebPackPlugin from 'html-webpack-plugin';
+import url from 'node:url';
 
-module.exports = {
-  entry: './src/index.ts',
-  resolve: {
-    extensions: ['*', '.js', '.jsx', '.tsx', '.ts'],
-  },
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default {
+  mode: 'production',
+  entry: './src/index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
+    filename: '[name].bundle.js'
   },
   module: {
     rules: [
+      {
+        test: /\.(png|jpe?g|gif|webp)$/, // Изображения
+        type: 'asset/resource',           
+        generator: {
+          filename: 'images/[name][hash][ext]'
+        }
+      },
       {
         test: /\.(?:js|ts)$/,
         exclude: /node_modules/,
@@ -38,12 +48,12 @@ module.exports = {
         test: /\.(woff|woff2|eot|ttf|otf)$/i,
         type: 'asset/resource',
       }
-    ],
+    ]
   },
   plugins: [
     new HtmlWebPackPlugin({
       template: './src/index.html',
       filename: './index.html',
-    })
+    }),
   ],
 };
