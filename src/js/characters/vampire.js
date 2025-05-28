@@ -8,7 +8,7 @@ export default class Vampire extends Character {
         super(level);
         this.attack = 25;
         this.defence = 25;
-        this.type = 'Vampire'
+        this.type = 'vampire';
     }
 }
 

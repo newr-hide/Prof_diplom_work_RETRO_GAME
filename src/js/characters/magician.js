@@ -8,7 +8,7 @@ export default class Magician extends Character {
         super(level);
         this.attack = 10;
         this.defence = 40;
-        this.type = 'Magician';
+        this.type = 'magician';
     }
 
     setAttack(attackValue) {
@@ -27,5 +27,5 @@ export default class Magician extends Character {
     }
 }
 
-const x = new Magician(4);
-console.log(x);
+// const x = new Magician(4);
+// console.log(x);

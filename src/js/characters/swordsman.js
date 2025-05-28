@@ -6,9 +6,9 @@ export default class Swordsman extends Character {
             throw new RangeError('Уровень должен быть между 1 и 4 включительно');
           }
         super(level);
-        this.attack = 10;
-        this.defence = 40;
-        this.type = 'Swordman';
+        this.attack = 40;
+        this.defence = 10;
+        this.type = 'swordsman';
     }
 }
 

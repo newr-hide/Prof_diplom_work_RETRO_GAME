@@ -12,5 +12,20 @@
  * ```
  * */
 export default class Team {
-  // TODO: write your logic here
+  constructor() {
+    this.members = [];
+  }
+
+  add(character) {
+    this.members.push(character);
+  }
+
+  getAll() {
+    return [...this.members];
+  }
+
+  size() {
+    return this.members.length;
+  }
 }
+

@@ -1,5 +1,5 @@
-import Character from './Character';
-
+import Character from './Character.js';
+import Bowman from './characters/bowman.js';
 export default class PositionedCharacter {
   constructor(character, position) {
     if (!(character instanceof Character)) {
@@ -14,3 +14,8 @@ export default class PositionedCharacter {
     this.position = position;
   }
 }
+
+
+// const character = new Bowman(2);
+// const position = 8; 
+// const positionedCharacter = new PositionedCharacter(character, position); 
