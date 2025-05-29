@@ -12,5 +12,5 @@ export default class Vampire extends Character {
     }
 }
 
-const x = new Vampire(4);
-console.log(x);
+// const x = new Vampire(4);
+// console.log(x);

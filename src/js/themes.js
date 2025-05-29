@@ -5,4 +5,10 @@ const themes = {
   mountain: 'mountain',
 };
 
-export default themes;
+const levelThemes = [
+  themes.prairie, // Уровень 1
+  themes.desert,  // Уровень 2
+  themes.arctic,  // Уровень 3
+  themes.mountain,// Уровень 4
+];
+export default levelThemes;

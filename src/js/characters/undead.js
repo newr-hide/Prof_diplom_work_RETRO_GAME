@@ -12,5 +12,5 @@ export default class Undead extends Character {
     }
 }
 
-const x = new Undead(2);
-console.log(x);
+// const x = new Undead(2);
+// console.log(x);
