@@ -71,13 +71,13 @@ export default class GameController {
   // Обработчик наведения на клетку
   onCellEnter(index) {
     const character = this.allPositionedChars.find(char => char.position === index);
+    
+    if (character && character.character) {
+      
     const hero = character.character
-    if (!character) {
-      return;
-    }
     const infoString = `\u{1F396}${hero.level}\u{2694}${hero.attack}\u{1F6E1}${hero.defence}\u{2764}${hero.health}`;
     console.log(infoString)
     this.gamePlay.showCellTooltip(infoString, index);
-  };
+  };}
 }
 
