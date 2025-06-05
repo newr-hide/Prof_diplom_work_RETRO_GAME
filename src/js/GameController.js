@@ -64,20 +64,28 @@ export default class GameController {
     // Рисуем персонажей на игровом поле
     this.playField.redrawPositions(this.allPositionedChars);
 
-    // Подписываем событие
+    // Подписываем на события
     this.playField.addCellEnterListener(this.onCellEnter.bind(this));
+    this.playField.addCellLeaveListener(this.onCellLeave.bind(this));
   }
 
   // Обработчик наведения на клетку
   onCellEnter(index) {
+    // console.log(index)
     const character = this.allPositionedChars.find(char => char.position === index);
     
     if (character && character.character) {
       
-    const hero = character.character
+    const hero = character.character;
     const infoString = `\u{1F396}${hero.level}\u{2694}${hero.attack}\u{1F6E1}${hero.defence}\u{2764}${hero.health}`;
-    console.log(infoString)
-    this.gamePlay.showCellTooltip(infoString, index);
+    // console.log(infoString)
+    
+    this.playField.showCellTooltip(infoString, index);
+    
   };}
+
+  onCellLeave(index) {
+    this.playField.hideCellTooltip(index);
+  }
 }
 

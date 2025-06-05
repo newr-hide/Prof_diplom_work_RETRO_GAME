@@ -61,6 +61,7 @@ export default class GamePlay {
     }
 
     this.cells = Array.from(this.boardEl.children);
+    // console.log(this.cells);
   }
 
   /**
@@ -72,12 +73,12 @@ export default class GamePlay {
     for (const cell of this.cells) {
       cell.innerHTML = '';
     }
-
+    // console.log(this.cells)
     for (const position of positions) {
       const cellEl = this.boardEl.children[position.position];
       const charEl = document.createElement('div');
       charEl.classList.add('character', position.character.type);
-      console.log(position.character.type);
+      // console.log(position.character.type);
       const healthEl = document.createElement('div');
       healthEl.classList.add('health-level');
 
@@ -197,6 +198,7 @@ export default class GamePlay {
   }
 
   showCellTooltip(message, index) {
+    // console.log(this.cells);
     this.cells[index].title = message;
   }
 
