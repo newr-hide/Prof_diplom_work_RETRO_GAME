@@ -67,6 +67,7 @@ export default class GameController {
     // Подписываем на события
     this.playField.addCellEnterListener(this.onCellEnter.bind(this));
     this.playField.addCellLeaveListener(this.onCellLeave.bind(this));
+    this.playField.addCellClickListener(this.onCellClick.bind(this));
   }
 
   // Обработчик наведения на клетку
@@ -86,6 +87,26 @@ export default class GameController {
 
   onCellLeave(index) {
     this.playField.hideCellTooltip(index);
+  }
+
+  onCellClick(cellIndex) {
+    // Проверяем, есть ли персонаж в данной ячейке
+    const character = this.allPositionedChars.find(char => char.position === cellIndex);
+    // console.log(character)
+
+    const playerTypes = ["bowman", "swordsman", "magician"];
+
+    if (!character) {return;}//на пустую клетку
+
+    if (!playerTypes.includes(character.character.type)) {
+    return GamePlay.showError("Нельзя выбрать вражеского персонажа!");
+    }
+
+    if (this.gameState.selected !== null) {
+      this.playField.deselectCell(this.gameState.selected); //Очищаем выделение если уже есть
+    }
+    this.playField.selectCell(cellIndex); 
+    this.gameState.selected = cellIndex; // Сохраняем индекс выбранной клетки
   }
 }
 
