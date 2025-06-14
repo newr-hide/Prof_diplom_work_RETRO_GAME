@@ -16,6 +16,9 @@ const ENEMY_COLUMNS = [6, 7];
 const playerTypes = [Bowman, Swordsman, Magician];
 const enemyTypes = [Daemon, Undead, Vampire];
 const usedPositions = new Set();
+// Генерация команд вынес сюда
+const playerChars = generateTeam(playerTypes, 1, 4).members; 
+const enemyChars = generateTeam(enemyTypes, 1, 4).members;
 
 
 // Функция для расчета уникального места для персонажа
@@ -36,13 +39,11 @@ export default class GameController {
     this.stateService = stateService;
     this.gameState = new GameState();
     this.allPositionedChars = [];
+    this.highlightedCells = [];
   }
 
   init() {
-    // Генерация команд
-    const playerChars = generateTeam(playerTypes, 1, 4).members; 
-    const enemyChars = generateTeam(enemyTypes, 1, 4).members;
-
+    
     // Инициализация игрового поля
     this.playField = new GamePlay();
     this.playField.bindToDOM(document.querySelector('#game-container'));
@@ -70,43 +71,159 @@ export default class GameController {
     this.playField.addCellClickListener(this.onCellClick.bind(this));
   }
 
+
+// Меняем положение персонажа
+  moveCharacter(char, newPosition) {
+    this.playField.deselectCell(char.position);
+    char.position = newPosition;
+    this.playField.redrawPositions(this.allPositionedChars);
+  }
   // Обработчик наведения на клетку
   onCellEnter(index) {
     // console.log(index)
     const character = this.allPositionedChars.find(char => char.position === index);
-    
+    if(character){this.playField.setCursor('pointer');}
+    if (this.gameState.selected !== null) {
+      const selectedChar = this.allPositionedChars.find(char => char.position === this.gameState.selected);
+      const availableMoves = this.getAvailableMoves(selectedChar, this.allPositionedChars);
+      const attackableTargets = this.getAttackableTargets(selectedChar, this.allPositionedChars);
+      // console.log(this.allPositionedChars)
+      if (availableMoves.includes(index)) {
+        this.playField.setCursor('pointer');
+        this.playField.selectCell(index, 'green');
+      } else if (attackableTargets.includes(index)) {
+        this.playField.setCursor('crosshair');
+        this.playField.selectCell(index, 'red');
+      } else {
+        this.playField.setCursor('not-allowed');
+      }
+    }
     if (character && character.character) {
-      
-    const hero = character.character;
-    const infoString = `\u{1F396}${hero.level}\u{2694}${hero.attack}\u{1F6E1}${hero.defence}\u{2764}${hero.health}`;
-    // console.log(infoString)
-    
-    this.playField.showCellTooltip(infoString, index);
-    
-  };}
+      const hero = character.character;
+      const infoString = `\u{1F396}${hero.level}\u{2694}${hero.attack}\u{1F6E1}${hero.defence}\u{2764}${hero.health}`;
+      this.playField.showCellTooltip(infoString, index);
+    };
+    }
 
-  onCellLeave(index) {
-    this.playField.hideCellTooltip(index);
-  }
+    onCellLeave(index) {
+      this.playField.hideCellTooltip(index);
+    
+      // Если выбран персонаж, сохраняем его выделение
+      if (this.gameState.selected !== null && index === this.gameState.selected ) {
+
+      } else {
+
+        this.playField.deselectCell(index);
+      }
+    }
 
   onCellClick(cellIndex) {
     // Проверяем, есть ли персонаж в данной ячейке
     const character = this.allPositionedChars.find(char => char.position === cellIndex);
     // console.log(character)
 
-    const playerTypes = ["bowman", "swordsman", "magician"];
-
-    if (!character) {return;}//на пустую клетку
-
-    if (!playerTypes.includes(character.character.type)) {
-    return GamePlay.showError("Нельзя выбрать вражеского персонажа!");
+    
+    if (!character) {
+      if (this.gameState.selected !== null) {
+        const selectedChar = this.allPositionedChars.find(char => char.position === this.gameState.selected);
+        const availableMoves = this.getAvailableMoves(selectedChar, this.allPositionedChars);
+  
+        if (availableMoves.includes(cellIndex)) {
+          this.moveCharacter(selectedChar, cellIndex);
+          this.gameState.selected = null;
+          this.playField.deselectCell(this.gameState.selected);
+        } else {
+          GamePlay.showError('Невозможно пойти сюда.');
+        }
+      }
+     } else {const playerTypes = ["bowman", "swordsman", "magician"];
+      if (!playerTypes.includes(character.character.type)) {
+        return GamePlay.showError("Нельзя выбрать вражеского персонажа!");
+        } // выбираем другого персонажа
+      if (this.gameState.selected !== null) {
+        this.playField.deselectCell(this.gameState.selected);
+      }
+      this.playField.selectCell(cellIndex);
+      this.gameState.selected = cellIndex;
     }
-
-    if (this.gameState.selected !== null) {
-      this.playField.deselectCell(this.gameState.selected); //Очищаем выделение если уже есть
-    }
-    this.playField.selectCell(cellIndex); 
-    this.gameState.selected = cellIndex; // Сохраняем индекс выбранной клетки
   }
+
+  getAvailableMoves(char, allCharacters) {
+    const moves = [];
+    const currentPos = char.position;
+    const maxSteps = char.character.maxSteps || 1;
+    const boardSize = 8;
+  
+    // Рассчитываем возможное направление
+    function tryAddMove(rowOffset, colOffset) {
+      for (let step = 1; step <= maxSteps; step++) {
+        const nextRow = Math.floor(currentPos / boardSize) + rowOffset * step;
+        const nextCol = currentPos % boardSize + colOffset * step;
+        const nextPos = nextRow * boardSize + nextCol;
+  
+        if (
+          nextRow >= 0 &&
+          nextRow < boardSize &&
+          nextCol >= 0 &&
+          nextCol < boardSize &&
+          !allCharacters.some(c => c.position === nextPos)
+        ) {
+          moves.push(nextPos);
+        }
+      }
+    }
+  
+    // Горизонтально-вверх и вниз
+    tryAddMove(-1, 0); // вверх
+    tryAddMove(1, 0);  // вниз
+  
+    // По вертикали влево и вправо
+    tryAddMove(0, -1); // влево
+    tryAddMove(0, 1);  // вправо
+  
+    // Диагональные направления
+    tryAddMove(-1, -1); // верхний левый угол
+    tryAddMove(-1, 1);  // верхний правый угол
+    tryAddMove(1, -1);  // нижний левый угол
+    tryAddMove(1, 1);   // нижний правый угол
+  
+    return moves;
+  }
+
+  
+  // Вычисляет расстояние между двумя позициями
+  calculateDistance(pos1, pos2) {
+    const xDiff = Math.abs((pos1 % 8) - (pos2 % 8));   // Разница по оси X
+    const yDiff = Math.abs(Math.floor(pos1 / 8) - Math.floor(pos2 / 8));  // Разница по оси Y
+
+    // Шахматное расстояние — максимум из разницы координат
+    return Math.max(xDiff, yDiff);  
+}
+
+getAttackableTargets(char, allCharacters) {
+    const enemyTypes = ['daemon', 'undead', 'vampire'];  // Типы врагов
+    const targets = [];          
+    const currentPos = char.position;      
+    const attackRange = char.character.attackRange || 1;
+    // console.log(allCharacters)     
+
+    for (const otherChar of allCharacters) {   
+        // Проверка типа врага
+        const isEnemy = enemyTypes.includes(otherChar.character.type);
+    
+        if (isEnemy) {
+            // Вычисляем расстояние от текущего персонажа до другого
+            const distance = this.calculateDistance(currentPos, otherChar.position);
+            
+            // Добавляем цель, если находится в радиусе атаки
+            if (distance <= attackRange) {
+                targets.push(otherChar.position);
+            }
+        }
+    }
+
+    return targets;
+}
+  
 }
 
