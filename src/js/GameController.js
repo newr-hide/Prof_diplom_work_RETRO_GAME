@@ -59,6 +59,7 @@ export default class GameController {
       return new PositionedCharacter(char, position);
     });
 
+   
     // Объединяем всех персонажей
     this.allPositionedChars = [...playerPositionedChars, ...enemyPositionedChars];
 
@@ -78,6 +79,7 @@ export default class GameController {
     char.position = newPosition;
     this.playField.redrawPositions(this.allPositionedChars);
   }
+
   // Обработчик наведения на клетку
   onCellEnter(index) {
     // console.log(index)
@@ -105,78 +107,114 @@ export default class GameController {
     };
     }
 
-    onCellLeave(index) {
-      this.playField.hideCellTooltip(index);
+  onCellLeave(index) {
+    this.playField.hideCellTooltip(index);
+  
+    // Если выбран персонаж, сохраняем его выделение
+    if (this.gameState.selected !== null && index === this.gameState.selected ) {
+
+    } else {
+
+      this.playField.deselectCell(index);
+    }
+  }
+
+  async onAttack(targetIndex) {
+    const attacker = this.allPositionedChars.find(char => char.position === this.gameState.selected);
+    const target = this.allPositionedChars.find(char => char.position === targetIndex);
     
-      // Если выбран персонаж, сохраняем его выделение
-      if (this.gameState.selected !== null && index === this.gameState.selected ) {
-
-      } else {
-
-        this.playField.deselectCell(index);
-      }
+    if (!target || !attacker) {
+      throw new Error('Ошибка: Персонаж или цель не найдены!');
     }
 
-    async onAttack(targetIndex) {
-      const attacker = this.allPositionedChars.find(char => char.position === this.gameState.selected);
-      const target = this.allPositionedChars.find(char => char.position === targetIndex);
-  
-      if (!target || !attacker) {
-        throw new Error('Ошибка: Персонаж или цель не найдены!');
-      }
-  
-      let damage = Math.max(
-        attacker.character.attack - target.character.defence,
-        attacker.character.attack * 0.1
-      );
-  
-      // Отображаем урон
-      await this.playField.showDamage(targetIndex, damage.toFixed(0));
-  
-      // Уменьшаем здоровье врага
-      target.character.health -= damage;
-  
-      // обновление полосы здоровья
-      this.playField.redrawPositions(this.allPositionedChars);
-  
-      // Завершение хода
-      this.gameState.selected = null;
-      this.playField.deselectCell(this.gameState.selected);
-      this.gameState.changeTurn();
-    }
-  
+    let damage = Math.max(
+      attacker.character.attack - target.character.defence,
+      attacker.character.attack * 0.1
+    );
+
+    await this.playField.showDamage(targetIndex, damage.toFixed(0));
+
+    target.character.health -= damage;
+    this.playField.redrawPositions(this.allPositionedChars);
+
+    
+    this.playField.deselectCell(this.gameState.selected);
+    
+    this.gameState.selected = null;
+    
+    this.nextTurn();
+    // console.log(this.gameState.turn)
+  }
+    //Атака врага
     async attackComputerTarget() {
       const computerChars = this.allPositionedChars.filter(char =>
         ['daemon', 'undead', 'vampire'].includes(char.character.type)
       );
-    
+  
       const playerChars = this.allPositionedChars.filter(char =>
         ['bowman', 'swordsman', 'magician'].includes(char.character.type)
       );
-    
-      // Из компьютерных персонажей выбираем первого, кто может атаковать кого-то из игроков
-      for (const compChar of computerChars) {
-        const attackableTargets = this.getAttackableTargets(compChar, playerChars);
-    
-        if (attackableTargets.length > 0) {
-          const targetIndex = attackableTargets[0]; // выбираем первого доступного игрока
-          const target = playerChars.find(char => char.position === targetIndex);
+      const randomCompChar = computerChars[Math.floor(Math.random() * computerChars.length)];
+      const attackableTargets = this.getEnemyAttackableTargets(randomCompChar, playerChars);
+
+      if (attackableTargets.length > 0) {
+        const targetIndex = attackableTargets[0];
+        const target = playerChars.find(char => char.position === targetIndex);
   
-          let damage = Math.max(
-            compChar.character.attack - target.character.defence,
-            compChar.character.attack * 0.1
-          );
-          // Показываем анимацию урона
-          await this.playField.showDamage(targetIndex, damage.toFixed(0));
-          target.character.health -= damage;
-          this.playField.redrawPositions(this.allPositionedChars);
-          break;
+        let damage = Math.max(
+          randomCompChar.character.attack - target.character.defence,
+          randomCompChar.character.attack * 0.1
+        );
+  
+      await this.playField.showDamage(targetIndex, damage.toFixed(0));
+      target.character.health -= damage;
+      this.playField.redrawPositions(this.allPositionedChars);
+    } else {
+      const closestTarget = this.findClosestTarget(randomCompChar, playerChars);
+      if (closestTarget) {
+        const bestMove = this.findBestMoveTowardsTarget(randomCompChar, closestTarget);
+        if (bestMove) {
+          this.moveCharacter(randomCompChar, bestMove);
         }
       }
+    }
+  
+    this.gameState.changeTurn();
+  }
     
-      // Передача хода игроку
-      this.gameState.changeTurn();
-    };
+    findClosestTarget(char, potentialTargets) {
+      let minDist = Infinity;
+      let closestTarget = null;
+  
+      for (const target of potentialTargets) {
+        const dist = this.calculateDistance(char.position, target.position);
+        if (dist < minDist) {
+          minDist = dist;
+          closestTarget = target;
+        }
+      }
+  
+      return closestTarget;
+    }
+    
+    
+  // Нахождение лучшего пути к цели
+  findBestMoveTowardsTarget(char, target) {
+    const possibleMoves = this.getAvailableMoves(char, this.allPositionedChars);
+  
+    let bestMove = null;
+    let minDist = Infinity;
+  
+    for (const move of possibleMoves) {
+      const dist = this.calculateDistance(move, target.position);
+      if (dist < minDist) {
+        minDist = dist;
+        bestMove = move;
+      }
+    }
+  
+    return bestMove;
+  }
     
   
   onCellClick(cellIndex) {
@@ -189,8 +227,12 @@ export default class GameController {
         
         if (availableMoves.includes(cellIndex)) {
           this.moveCharacter(selectedChar, cellIndex);
-          this.gameState.selected = null;
+          
           this.playField.deselectCell(this.gameState.selected);
+          this.gameState.selected = null;
+          this.nextTurn();
+          
+          
         } else {
           GamePlay.showError('Невозможно пойти сюда.');
         }
@@ -206,15 +248,15 @@ export default class GameController {
         const attackableTargets = this.getAttackableTargets(selectedChar, this.allPositionedChars);
        
         if (attackableTargets.includes(cellIndex)) {
-          if (this.gameState.turn === 'Player'){
-            this.onAttack(cellIndex).catch(error => console.error(error.message));
-          }
           
-          if (this.gameState.turn === 'Enemy'){
-            this.attackComputerTarget().catch(error => console.error(error.message));
-            }
-            console.log(this.gameState.turn)
-        } else {
+          if (this.gameState.turn === 'Player'){
+            this.onAttack(cellIndex).then(() => {
+              // console.log('Атака прошла успешно');
+              this.nextTurn(); 
+            }).catch(error => console.error(error.message));
+        }} 
+          
+         else {
           // выбор нового персонажа
           if (playerTypes.includes(character.character.type)){
             this.playField.deselectCell(this.gameState.selected);
@@ -272,7 +314,6 @@ export default class GameController {
   
     return moves;
   }
-
   
   // Вычисляет расстояние между двумя позициями
   calculateDistance(pos1, pos2) {
@@ -283,8 +324,8 @@ export default class GameController {
     return Math.max(xDiff, yDiff);  
 }
 
-getAttackableTargets(char, allCharacters) {
-    const enemyTypes = ['daemon', 'undead', 'vampire'];  // Типы врагов
+  getEnemyAttackableTargets(char, allCharacters) {
+    const playerTypes = ["bowman", "swordsman", "magician"];
     const targets = [];          
     const currentPos = char.position;      
     const attackRange = char.character.attackRange || 1;
@@ -292,7 +333,7 @@ getAttackableTargets(char, allCharacters) {
 
     for (const otherChar of allCharacters) {   
         // Проверка типа врага
-        const isEnemy = enemyTypes.includes(otherChar.character.type);
+        const isEnemy = playerTypes.includes(otherChar.character.type);
         if (isEnemy) {
             // Вычисляем расстояние от текущего персонажа до другого
             const distance = this.calculateDistance(currentPos, otherChar.position);
@@ -302,12 +343,44 @@ getAttackableTargets(char, allCharacters) {
                 targets.push(otherChar.position);
             }
         }
+    }
+    return targets;
+  }
+
+  getAttackableTargets(char, allCharacters) {
+      const enemyTypes = ['daemon', 'undead', 'vampire'];  // Типы врагов
+      const targets = [];          
+      const currentPos = char.position;      
+      const attackRange = char.character.attackRange || 1;
+      // console.log(allCharacters)     
+
+      for (const otherChar of allCharacters) {   
+          // Проверка типа врага
+          const isEnemy = enemyTypes.includes(otherChar.character.type);
+          if (isEnemy) {
+              // Вычисляем расстояние от текущего персонажа до другого
+              const distance = this.calculateDistance(currentPos, otherChar.position);
+              
+              // Добавляем цель, если находится в радиусе атаки
+              if (distance <= attackRange) {
+                  targets.push(otherChar.position);
+              }
+          }
+      }
+      return targets;
+  }
+
+  nextTurn() {
+    if (this.gameState.turn === 'Player') {
       
+      this.gameState.changeTurn(); 
+      this.attackComputerTarget(); 
+    } else if (this.gameState.turn === 'Enemy') {
+      this.gameState.changeTurn(); 
       
     }
+  }
 
-    return targets;
-}
+
   
 }
-
