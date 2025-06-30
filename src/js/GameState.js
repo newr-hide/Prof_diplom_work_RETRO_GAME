@@ -7,14 +7,10 @@ export default class GameState {
     this.selected = null;
   }
   changeTurn() {
-    try {
-      if (this.turn === 'Player') {
-        this.turn = 'Enemy';                       
-      } else {
-        this.turn = 'Player';                       
-      }
-    } catch (err) {
-      console.error('Ошибка при смене хода:', err);
+    if (this.turn === 'Player') {
+      this.turn = 'Enemy';
+    } else {
+      this.turn = 'Player';
     }
   }
   static from(object) {
